@@ -1,0 +1,53 @@
+services:
+  sql_in_dc:
+    platform: linux/amd64
+    image: alexa93/carvedrock-sql:${TAG:-v1.0}
+    build:
+      context: .
+      dockerfile: sql/sql.Dockerfile
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Sql1nContainersR0cks!"
+    ports:
+      - "1433:1433"
+
+  carvedrock.api:
+    image: alexa93/carvedrock-api:${TAG:-v1.0}
+    build:
+      context: .
+      dockerfile: CarvedRock.Api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5050:80"
+    depends_on:
+      - sql_in_dc
+      - rabbit_in_dc
+  carvedrock.app:
+    image: alexa93/carvedrock-app:${TAG:-v1.0}
+    build:
+      context: .
+      dockerfile: CarvedRock.App/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5001:80"
+    depends_on:
+      - carvedrock.api
+
+  rabbit_in_dc:
+    image: rabbitmq:3-management
+    ports: 
+      - "5672:5672"
+      - "15672:15672"
+
+  carvedrocker_order_processor:
+    image: alexa93/carvedrock-processor:${TAG:-v1.0}
+    build:
+      context: .
+      dockerfile: CarvedRock.OrderProcessor/Dockerfile
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+    depends_on:
+    - sql_in_dc
+    - rabbit_in_dc
