@@ -2,7 +2,7 @@ name: ci-build-push-image
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
     paths-ignore:
       - 'README.md'
       - '.gitignore'
