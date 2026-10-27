@@ -2,7 +2,7 @@ name: ci-build-push-image
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main ]
     paths-ignore:
       - 'README.md'
       - '.gitignore'
@@ -52,10 +52,9 @@ jobs:
         with:
           context: .
           file: ${{ matrix.file }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request'}}
           tags: |
             ${{ matrix.image }}:latest
-            ${{ matrix.image }}:v1.0
             ${{ matrix.image }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
