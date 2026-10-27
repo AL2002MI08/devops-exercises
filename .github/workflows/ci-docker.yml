@@ -1,0 +1,60 @@
+name: ci-build-push-image
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - '.vscode/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - '.vscode/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            file: CarvedRock.Api/Dockerfile
+            image: alexa93/carvedrock-api
+          - name: app
+            file: CarvedRock.App/Dockerfile
+            image: alexa93/carvedrock-app
+          - name: order-processor
+            file: CarvedRock.OrderProcessor/Dockerfile
+            image: alexa93/carvedrock-processor
+          - name: invoice-generator
+            file: CarvedRock.InvoiceGenerator/Dockerfile
+            image: alexa93/carvedrock-invoice
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f #v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push (${{ matrix.name }})
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc #v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request'}}
+          tags: |
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
